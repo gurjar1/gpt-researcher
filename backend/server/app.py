@@ -1,3 +1,7 @@
+# Load environment variables FIRST - before any other imports
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import os
 from typing import Dict, List, Any
@@ -31,6 +35,7 @@ from server.websocket_manager import run_agent
 from utils import write_md_to_word, write_md_to_pdf
 from gpt_researcher.utils.enum import Tone
 from chat.chat import ChatAgentWithMemory
+from server.quick_search import router as quick_search_router
 
 # MongoDB services removed - no database persistence needed
 
@@ -91,6 +96,9 @@ async def lifespan(app: FastAPI):
 
 # App initialization
 app = FastAPI(lifespan=lifespan)
+
+# Include routers
+app.include_router(quick_search_router)
 
 # Configure allowed origins for CORS
 ALLOWED_ORIGINS = [

@@ -2,36 +2,51 @@ import Image from "next/image";
 import React, { FC, useEffect, useState, useRef } from "react";
 import InputArea from "./ResearchBlocks/elements/InputArea";
 import { motion, AnimatePresence } from "framer-motion";
+import FocusModeSelector, { FocusMode } from "./FocusModeSelector";
 
 type THeroProps = {
   promptValue: string;
   setPromptValue: React.Dispatch<React.SetStateAction<string>>;
-  handleDisplayResult: (query : string) => void;
+  handleDisplayResult: (query: string) => void;
+  focusMode?: FocusMode;
+  onFocusModeChange?: (mode: FocusMode) => void;
+  onQuickSearch?: (query: string) => void;
 };
 
 const Hero: FC<THeroProps> = ({
   promptValue,
   setPromptValue,
   handleDisplayResult,
+  focusMode: externalFocusMode,
+  onFocusModeChange,
+  onQuickSearch,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showGradient, setShowGradient] = useState(true);
   const particlesContainerRef = useRef<HTMLDivElement>(null);
-  
+  const [internalFocusMode, setInternalFocusMode] = useState<FocusMode>('quick');
+
+  // Use external or internal focus mode
+  const focusMode = externalFocusMode ?? internalFocusMode;
+  const handleModeChange = (mode: FocusMode) => {
+    setInternalFocusMode(mode);
+    onFocusModeChange?.(mode);
+  };
+
   useEffect(() => {
     setIsVisible(true);
-    
+
     // Create particles for the background effect
     if (particlesContainerRef.current) {
       const container = particlesContainerRef.current;
       const particleCount = window.innerWidth < 768 ? 15 : 30; // Reduce particles on mobile
-      
+
       // Clear any existing particles
       container.innerHTML = '';
-      
+
       for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
-        
+
         // Random particle attributes
         const size = Math.random() * 4 + 1;
         const posX = Math.random() * 100;
@@ -39,7 +54,7 @@ const Hero: FC<THeroProps> = ({
         const duration = Math.random() * 50 + 20;
         const delay = Math.random() * 5;
         const opacity = Math.random() * 0.3 + 0.1;
-        
+
         // Apply styles
         particle.className = 'absolute rounded-full bg-white';
         Object.assign(particle.style, {
@@ -50,18 +65,18 @@ const Hero: FC<THeroProps> = ({
           opacity: opacity.toString(),
           animation: `float ${duration}s ease-in-out ${delay}s infinite`,
         });
-        
+
         container.appendChild(particle);
       }
     }
-    
+
     // Add scroll event listener to show/hide gradient
     let lastScrollY = window.scrollY;
     const threshold = 50; // Amount of scroll before hiding gradient (reduced for quicker response)
-    
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY <= threshold) {
         // At or near the top, show gradient
         setShowGradient(true);
@@ -72,12 +87,12 @@ const Hero: FC<THeroProps> = ({
         // Scrolling up, show gradient
         setShowGradient(true);
       }
-      
+
       lastScrollY = currentScrollY;
     };
-    
+
     window.addEventListener('scroll', handleScroll);
-    
+
     const container = particlesContainerRef.current;
     // Clean up function
     return () => {
@@ -102,25 +117,41 @@ const Hero: FC<THeroProps> = ({
     <div className="relative overflow-visible min-h-[100vh] flex items-center pt-[60px] sm:pt-[80px] mt-[-60px] sm:mt-[-130px]">
       {/* Particle background */}
       <div ref={particlesContainerRef} className="absolute inset-0 -z-20"></div>
-      
-      <motion.div 
+
+      <motion.div
         initial="hidden"
         animate={isVisible ? "visible" : "hidden"}
         variants={fadeInUp}
         transition={{ duration: 0.8 }}
         className="flex flex-col items-center justify-center w-full py-6 sm:py-8 md:py-16 lg:pt-10 lg:pb-20"
       >
-        {/* Header text */}
-        <motion.h1 
+        {/* Focus Mode Selector */}
+        <motion.div
+          variants={fadeInUp}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="mb-4"
+        >
+          <FocusModeSelector
+            selectedMode={focusMode}
+            onModeChange={handleModeChange}
+          />
+        </motion.div>
+
+        {/* Header text - dynamic based on mode */}
+        <motion.h1
           variants={fadeInUp}
           transition={{ duration: 0.8, delay: 0.1 }}
           className="text-2xl sm:text-3xl md:text-4xl font-medium text-center text-white mb-8 sm:mb-10 md:mb-12 px-4"
         >
-          What would you like to research next?
+          {focusMode === 'quick'
+            ? 'Ask anything - get instant answers'
+            : focusMode === 'deep'
+              ? 'What should we deeply research?'
+              : 'What would you like to research next?'}
         </motion.h1>
 
         {/* Input section with enhanced styling */}
-        <motion.div 
+        <motion.div
           variants={fadeInUp}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="w-full max-w-[800px] pb-6 sm:pb-8 md:pb-10 px-4"
@@ -131,11 +162,19 @@ const Hero: FC<THeroProps> = ({
               <InputArea
                 promptValue={promptValue}
                 setPromptValue={setPromptValue}
-                handleSubmit={handleDisplayResult}
+                handleSubmit={(query) => {
+                  // Quick-type modes (quick, reddit, news, shopping) use quick search
+                  if (['quick', 'reddit', 'news', 'shopping'].includes(focusMode) && onQuickSearch) {
+                    onQuickSearch(query);
+                  } else {
+                    // Research and Deep modes use standard research
+                    handleDisplayResult(query);
+                  }
+                }}
               />
             </div>
           </div>
-          
+
           {/* Disclaimer text */}
           <motion.div
             variants={fadeInUp}
@@ -149,7 +188,7 @@ const Hero: FC<THeroProps> = ({
         </motion.div>
 
         {/* Suggestions section with enhanced styling */}
-        <motion.div 
+        <motion.div
           variants={fadeInUp}
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex flex-wrap items-center justify-center gap-2 xs:gap-3 md:gap-4 pb-6 sm:pb-8 md:pb-10 px-4 lg:flex-nowrap lg:justify-normal"
@@ -187,7 +226,7 @@ const Hero: FC<THeroProps> = ({
       </motion.div>
 
       {/* Magical premium gradient glow at the bottom */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: showGradient ? 1 : 0 }}
         transition={{ duration: 1.2 }}
@@ -195,7 +234,7 @@ const Hero: FC<THeroProps> = ({
       >
         <div className="relative w-full h-full">
           {/* Main perfect center glow with smooth fade at edges */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
               opacity: 0.85,
@@ -203,9 +242,9 @@ const Hero: FC<THeroProps> = ({
               boxShadow: '0 0 30px 6px rgba(12, 219, 182, 0.5), 0 0 60px 10px rgba(6, 219, 238, 0.25)'
             }}
           />
-          
+
           {/* Subtle shimmer overlay with perfect center focus */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
               animation: 'shimmer 8s ease-in-out infinite alternate',
@@ -213,9 +252,9 @@ const Hero: FC<THeroProps> = ({
               background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.2) 30%, rgba(255, 255, 255, 0) 60%)'
             }}
           />
-          
+
           {/* Gentle breathing effect */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
               opacity: 0.4,
@@ -225,7 +264,7 @@ const Hero: FC<THeroProps> = ({
           />
         </div>
       </motion.div>
-      
+
       {/* Custom keyframes for magical animations */}
       <style jsx global>{`
         @keyframes shimmer {
