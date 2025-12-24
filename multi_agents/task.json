@@ -1,18 +1,17 @@
 {
-  "query": "Is AI in a hype cycle?",
-  "max_sections": 3,
+  "query": "What are the best practices for running AI models locally with Ollama?",
+  "max_sections": 2,
   "publish_formats": {
     "markdown": true,
-    "pdf": true,
-    "docx": true
+    "pdf": false,
+    "docx": false
   },
   "include_human_feedback": false,
   "follow_guidelines": false,
-  "model": "gpt-4o",
+  "model": "llama3.1",
   "guidelines": [
     "The report MUST be written in APA format",
-    "Each sub section MUST include supporting sources using hyperlinks. If none exist, erase the sub section or rewrite it to be a part of the previous section",
-    "The report MUST be written in spanish"
+    "Each sub section MUST include supporting sources using hyperlinks"
   ],
   "verbose": true
 }
